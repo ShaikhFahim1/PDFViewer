@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern PDF Viewer</title>
+    <!-- Load PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <!-- PDF.js default CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf_viewer.min.css" rel="stylesheet">
+    <style>
+        /* CSS styles for custom controls */
+        .pdfViewer {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .pdfViewer-canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .zoom-controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .zoom-controls button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .zoom-controls button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="pdfViewer">
+        <!-- Placeholder for PDF viewer -->
+        <div class="pdfViewer-canvas"></div>
+        <!-- Controls for the PDF viewer -->
+        <div class="zoom-controls">
+            <button id="zoomOut">Zoom Out</button>
+            <button id="zoomIn">Zoom In</button>
+        </div>
+    </div>
+
+    <script>
+        // URL of the PDF file
+        const pdfUrl = 'https://example.com/your-pdf-file.pdf';
+
+        // Initialize variables
+        let currentPage = 1;
+        let pdfDoc = null;
+        let scale = 1;
+
+        // Initialize the PDF viewer
+        pdfjsLib.getDocument(pdfUrl).promise.then(doc => {
+            pdfDoc = doc;
+            renderPage(currentPage);
+        }).catch(error => {
+            console.error('Error loading PDF:', error);
+        });
+
+        // Function to render a specific page
+        function renderPage(pageNumber) {
+            // Fetch the specified page
+            pdfDoc.getPage(pageNumber).then(page => {
+                const canvas = document.createElement('canvas');
+                const canvasContainer = document.querySelector('.pdfViewer-canvas');
+                const context = canvas.getContext('2d');
+                const viewport = page.getViewport({ scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvasContainer.innerHTML = ''; // Clear previous content
+                canvasContainer.appendChild(canvas);
+
+                // Render the page on the canvas
+                page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                });
+
+                // Update current page number
+                currentPage = pageNumber;
+            });
+        }
+
+        // Event listener for zoom out button
+        document.getElementById('zoomOut').addEventListener('click', function() {
+            if (scale > 0.25) { // Limit minimum scale
+                scale -= 0.25;
+                renderPage(currentPage);
+            }
+        });
+
+        // Event listener for zoom in button
+        document.getElementById('zoomIn').addEventListener('click', function() {
+            if (scale < 4) { // Limit maximum scale
+                scale += 0.25;
+                renderPage(currentPage);
+            }
+        });
+
+        // Keyboard shortcuts for navigation and zoom
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey || event.metaKey) {
+                switch (event.key.toLowerCase()) {
+                    case 'arrowleft': // Previous page
+                        if (currentPage > 1) renderPage(currentPage - 1);
+                        break;
+                    case 'arrowright': // Next page
+                        if (currentPage < pdfDoc.numPages) renderPage(currentPage + 1);
+                        break;
+                    case '+': // Zoom in
+                        if (scale < 4) { // Limit maximum scale
+                            scale += 0.25;
+                            renderPage(currentPage);
+                        }
+                        break;
+                    case '-': // Zoom out
+                        if (scale > 0.25) { // Limit minimum scale
+                            scale -= 0.25;
+                            renderPage(currentPage);
+                        }
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
